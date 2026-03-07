@@ -1,0 +1,14 @@
+# Credentials — never commit
+serviceAccountKey.json
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# OS
+.DS_Store
+Thumbs.db

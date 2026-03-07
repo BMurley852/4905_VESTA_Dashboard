@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}VESTA Dashboard{% endblock %}</title>
+
+  <!-- Google Fonts: DM Mono + DM Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+</head>
+<body>
+
+  <!-- ── Navigation ────────────────────────────────────────────────── -->
+  <nav class="nav">
+    <a href="/" class="nav-brand">
+      <span class="nav-logo">◈</span>
+      <span>VESTA Dashboard</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Overview</a></li>
+      <li><a href="/compare" class="nav-link {% if request.path.startswith('/compare') %}active{% endif %}">Compare</a></li>
+      <li><a href="/sessions" class="nav-link {% if request.path.startswith('/sessions') %}active{% endif %}">Sessions</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── Page content ──────────────────────────────────────────────── -->
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── Shared JS ─────────────────────────────────────────────────── -->
+  <script src="/static/js/dashboard.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

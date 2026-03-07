@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Subject {{ subject_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="/" class="back-link">← All subjects</a>
+    <h1 class="page-title" id="subjectTitle">Subject <span class="mono">{{ subject_id }}</span></h1>
+  </div>
+  <div class="header-controls">
+    <button id="addToCompareBtn" class="btn btn-outline"
+            data-id="{{ subject_id }}">Add to comparison</button>
+  </div>
+</div>
+
+<!-- Score cards -->
+<section id="scoreCards" class="score-grid"></section>
+
+<!-- Detail fields -->
+<section class="two-col">
+  <div class="card" id="detailCard">
+    <h2 class="card-title">Result Details</h2>
+    <dl id="detailList" class="detail-list"></dl>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Score Breakdown</h2>
+    <canvas id="radarChart"></canvas>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const SUBJECT_ID = "{{ subject_id }}";
+</script>
+<script src="/static/js/subject.js"></script>
+{% endblock %}

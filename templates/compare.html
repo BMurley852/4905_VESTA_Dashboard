@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Compare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Compare Subjects</h1>
+    <p class="page-sub">Select subjects to compare side-by-side</p>
+  </div>
+</div>
+
+<!-- Subject selector -->
+<section class="card">
+  <div class="compare-selector">
+    <input id="subjectSearch" class="input" type="text"
+           placeholder="Search and add subjects…" autocomplete="off" />
+    <div id="autocompleteBox" class="autocomplete-box hidden"></div>
+  </div>
+  <div id="selectedChips" class="chip-row"></div>
+  <button id="loadCompareBtn" class="btn btn-primary mt-1">Load comparison</button>
+</section>
+
+<!-- Bar chart -->
+<section class="card" id="chartSection" style="display:none">
+  <h2 class="card-title">Score Comparison</h2>
+  <canvas id="compareChart" height="120"></canvas>
+</section>
+
+<!-- Side-by-side table -->
+<section class="card" id="tableSection" style="display:none">
+  <h2 class="card-title">Field Comparison</h2>
+  <div class="table-wrap">
+    <table id="compareTable" class="table compare-table">
+      <thead id="compareHead"></thead>
+      <tbody id="compareBody"></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Pre-seed IDs passed via URL ?ids=...
+  const PRELOADED_IDS = {{ subject_ids | tojson }};
+</script>
+<script src="/static/js/compare.js"></script>
+{% endblock %}

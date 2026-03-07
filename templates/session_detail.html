@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Session {{ doc_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="/sessions" class="back-link">← Session Explorer</a>
+    <h1 class="page-title" id="sessionTitle">Loading…</h1>
+  </div>
+  <div id="sessionMeta" class="page-sub"></div>
+</div>
+
+<!-- Overall score bar -->
+<section id="overallCards" class="stats-bar"></section>
+
+<!-- Room sections rendered here -->
+<div id="roomSections"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const SESSION_DOC_ID = "{{ doc_id }}";
+</script>
+<script src="/static/js/session_detail.js"></script>
+{% endblock %}

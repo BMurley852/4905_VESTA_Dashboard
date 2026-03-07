@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sessions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Session Explorer</h1>
+    <p class="page-sub">Search for a participant's decision flow by email or user ID</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="search-row">
+    <input id="sessionSearch" class="input" style="flex:1;min-width:0"
+           type="text" placeholder="Enter email or user ID…" autocomplete="off" />
+    <button id="searchBtn" class="btn btn-primary">Search</button>
+  </div>
+
+  <div id="searchResults" class="session-results"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/sessions.js"></script>
+{% endblock %}

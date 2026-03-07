@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Subject Overview</h1>
+    <p class="page-sub">All test results at a glance</p>
+  </div>
+  <div class="header-controls">
+    <input id="search" class="input" type="text" placeholder="Search subjects…" />
+    <select id="sortField" class="input">
+      <option value="subject_id">Sort: ID</option>
+      <option value="overall_score">Sort: Score</option>
+      <option value="test_date">Sort: Date</option>
+    </select>
+    <select id="sortOrder" class="input">
+      <option value="asc">↑ Asc</option>
+      <option value="desc">↓ Desc</option>
+    </select>
+    <button id="compareBtn" class="btn btn-primary" disabled>Compare selected</button>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<section id="statsBar" class="stats-bar">
+  <div class="stat-card skeleton"></div>
+  <div class="stat-card skeleton"></div>
+  <div class="stat-card skeleton"></div>
+  <div class="stat-card skeleton"></div>
+</section>
+
+<!-- Table -->
+<section class="card">
+  <div class="table-wrap">
+    <table id="subjectsTable" class="table">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody">
+        <tr><td colspan="99" class="table-loading">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Aggregate chart -->
+<section class="card">
+  <h2 class="card-title">Score Distribution</h2>
+  <canvas id="distChart" height="100"></canvas>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/index.js"></script>
+{% endblock %}
