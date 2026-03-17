@@ -1,7 +1,3 @@
-/**
- * subject.js — Detail page for a single subject.
- */
-
 (async () => {
   try {
     const [data, fieldConfig] = await Promise.all([
@@ -11,13 +7,14 @@
     renderScoreCards(data, fieldConfig);
     renderDetailList(data, fieldConfig);
     renderBreakdown(data, fieldConfig);
+    if (data.email) renderSessions(data.email);
   } catch (err) {
     document.getElementById("scoreCards").innerHTML =
       `<p style="color:var(--danger)">Error: ${err.message}</p>`;
   }
 })();
 
-// ── Score cards ────────────────────────────────────────────────────────
+// score cards
 function renderScoreCards(data, fieldConfig) {
   const numericFields = Object.entries(fieldConfig)
     .filter(([, cfg]) => cfg.fmt === "number" || cfg.fmt === "percent");
@@ -38,7 +35,7 @@ function renderScoreCards(data, fieldConfig) {
   }).join("");
 }
 
-// ── Detail list ────────────────────────────────────────────────────────
+// detail list
 function renderDetailList(data, fieldConfig) {
   const numericKeys = new Set(
     Object.entries(fieldConfig)
@@ -59,7 +56,7 @@ function renderDetailList(data, fieldConfig) {
     .join("");
 }
 
-// ── Category breakdown chart ───────────────────────────────────────────
+// breakdown bar chart
 function renderBreakdown(data, fieldConfig) {
   const numericFields = Object.entries(fieldConfig)
     .filter(([, cfg]) => cfg.fmt === "number" || cfg.fmt === "percent")
@@ -99,7 +96,32 @@ function renderBreakdown(data, fieldConfig) {
   });
 }
 
-// ── Add to comparison ──────────────────────────────────────────────────
+// pull sessions for this subject's email
+async function renderSessions(email) {
+  const card = document.getElementById("sessionsCard");
+  const list = document.getElementById("sessionsList");
+  card.style.display = "";
+
+  try {
+    const sessions = await apiFetch(`/api/sessions?q=${encodeURIComponent(email)}`);
+    if (!sessions.length) {
+      list.innerHTML = `<p class="text-dim">No sessions found for ${email}.</p>`;
+      return;
+    }
+    list.innerHTML = `<ul class="session-links">${
+      sessions.map(s => `
+        <li>
+          <a href="/sessions/${encodeURIComponent(s._doc_id)}" class="session-link">
+            <span class="mono">${s._doc_id}</span>
+          </a>
+        </li>`).join("")
+    }</ul>`;
+  } catch (err) {
+    list.innerHTML = `<p style="color:var(--danger)">Could not load sessions: ${err.message}</p>`;
+  }
+}
+
+// compare button state
 const addBtn = document.getElementById("addToCompareBtn");
 const id     = addBtn?.dataset.id;
 

@@ -1,13 +1,5 @@
-"""
-firestore/sessions.py — Query and parse the newData collection.
-
-Each document in newData is a flat dict with encoded field names:
-  {session_num}_{room_code}{round_num}_{item_type}_{property}
-
-e.g. 1_Bd1_E0_name  → session 1, Bedroom round 1, Event 0, field "name"
-     2_LR_Start_bal → session 2, Living Room, start balance
-     4_K_T2_amt     → session 4, Kitchen, session-level transaction 2, amount
-"""
+# field key format: {session_num}_{room_code}{round_num}_{item_type}_{property}
+# e.g. 1_Bd1_E0_name, 2_LR_Start_bal, 4_K_T2_amt
 
 import re
 import datetime
@@ -16,9 +8,7 @@ from typing import Optional
 
 from firestore.cache import TTLCache
 
-# Session data changes rarely — cache aggressively.
-# Call POST /api/cache/clear to force a refresh after new data is uploaded.
-_cache = TTLCache(ttl=1800)   # 30 min default
+_cache = TTLCache(ttl=1800)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +23,6 @@ ROOM_NAMES = {
 
 ROOM_ORDER = {"Bd": 1, "LR": 2, "Ba": 3, "K": 4}
 
-# Matches: session_num, room_code, round_num (may be empty), item_token, property
 _KEY_RE = re.compile(
     r'^(\d+)_([A-Za-z]+)(\d*)_(Start|End|BUY|[ET]\d+)_(\w+)$'
 )
@@ -48,7 +37,6 @@ def _serialize(value):
 
 
 def _parse_doc(doc_id: str, raw: dict) -> dict:
-    """Convert the flat Firestore dict into a structured session object."""
     sessions: dict[str, dict] = {}
 
     for key, raw_val in raw.items():
@@ -106,7 +94,6 @@ def _parse_doc(doc_id: str, raw: dict) -> dict:
                 s["extra_txns"].setdefault(item, {})
                 s["extra_txns"][item][prop] = val
 
-    # Assemble ordered result
     result_sessions = []
     for room_code, s in sorted(sessions.items(), key=lambda x: ROOM_ORDER.get(x[0], 99)):
         rounds = []
@@ -116,13 +103,11 @@ def _parse_doc(doc_id: str, raw: dict) -> dict:
             txns   = [v for _, v in sorted(r["txns"].items())]
             rounds.append({"id": rid, "buy": r["buy"] or None, "events": events, "transactions": txns})
 
-        # Session-level items (no round) appended as a trailing entry
         extra_events = [v for _, v in sorted(s["extra_events"].items())]
         extra_txns   = [v for _, v in sorted(s["extra_txns"].items())]
         if extra_events or extra_txns:
             rounds.append({"id": None, "buy": None, "events": extra_events, "transactions": extra_txns})
 
-        # Compute per-room score summary
         all_events = [e for r in rounds for e in r["events"]]
         all_txns   = [t for r in rounds for t in r["transactions"]]
         evt_score  = sum(int(e.get("pnt", 0)) for e in all_events)
@@ -159,11 +144,6 @@ class SessionsQuery:
         self.db = db
 
     def search(self, q: str) -> list[dict]:
-        """
-        Search newData by email prefix or exact user_id.
-        Returns lightweight summary records (no full round data).
-        Results cached for 10 min keyed on the query string.
-        """
         cache_key = f"session_search:{q}"
         cached = _cache.get(cache_key)
         if cached is not None:
@@ -173,7 +153,6 @@ class SessionsQuery:
         col = self.db.collection(COLLECTION)
         results = {}
 
-        # Prefix match on email (backticks required for fields starting with a digit)
         email_docs = col.where("`0_Email`", ">=", q).where("`0_Email`", "<=", q + "\uf8ff").limit(20).stream()
         for doc in email_docs:
             d = doc.to_dict()
@@ -186,12 +165,11 @@ class SessionsQuery:
             results[doc.id] = {"_doc_id": doc.id, "email": d.get("0_Email"), "user_id": d.get("0_User_Id")}
 
         result_list = list(results.values())
-        _cache.set(cache_key, result_list, ttl=600)   # 10 min — searches may reflect new data sooner
+        _cache.set(cache_key, result_list, ttl=600)
         logger.debug("Cache set: %s (%d results)", cache_key, len(result_list))
         return result_list
 
     def get_session(self, doc_id: str) -> Optional[dict]:
-        """Fetch and parse a single newData document. Cached for 30 min."""
         cache_key = f"session:{doc_id}"
         cached = _cache.get(cache_key)
         if cached is not None:
@@ -203,13 +181,12 @@ class SessionsQuery:
             return None
 
         result = _parse_doc(doc.id, doc.to_dict())
-        _cache.set(cache_key, result)   # inherits 30 min default
+        _cache.set(cache_key, result)
         logger.debug("Cache set: %s", cache_key)
         return result
 
     @staticmethod
     def clear_cache():
-        """Flush all cached session query results."""
         _cache.clear()
 
     @staticmethod

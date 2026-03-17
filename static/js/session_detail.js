@@ -13,6 +13,15 @@ const TXN_TYPE_LABELS = {
 function txnTypeLabel(t) { return TXN_TYPE_LABELS[t] ?? t?.replace(/([A-Z])/g, " $1") ?? "Unknown"; }
 function fmtCurrency(n)  { return n == null ? "—" : "$" + parseFloat(n).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function fmtTime(iso)    { return iso ? new Date(iso).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"}) : ""; }
+function fmtDuration(prev, curr) {
+  if (!prev || !curr) return "";
+  const ms = new Date(curr) - new Date(prev);
+  if (isNaN(ms) || ms < 0) return "";
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60), r = s % 60;
+  return r ? `${m}m ${r}s` : `${m}m`;
+}
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 (async () => {
@@ -77,6 +86,7 @@ function renderRooms(data) {
   container.innerHTML = data.sessions.map(renderRoom).join("");
 }
 
+
 function renderRoom(session) {
   const balChange = session.end_bal != null && session.start_bal != null
     ? session.end_bal - session.start_bal : null;
@@ -86,6 +96,13 @@ function renderRoom(session) {
   const { events_correct, events_total, txns_correct, txns_total } = session.score;
   const roomScore = events_correct + txns_correct;
   const roomTotal = events_total + txns_total;
+
+  let prevTime = session.start_time;
+  const flowParts = session.rounds.map(r => {
+    const [html, next] = renderRound(r, prevTime);
+    prevTime = next;
+    return html;
+  });
 
   return `
     <div class="card room-card${session.incomplete ? " room-incomplete" : ""}">
@@ -109,37 +126,41 @@ function renderRoom(session) {
       </div>
 
       <div class="flow">
-        ${session.rounds.map(r => renderRound(r)).join("")}
+        ${flowParts.join("")}
       </div>
     </div>`;
 }
 
-function renderRound(round) {
+function renderRound(round, prevTime) {
   const parts = [];
 
   if (round.buy && round.buy.item) {
-    parts.push(renderPurchase(round.buy));
+    parts.push(renderPurchase(round.buy, prevTime));
+    if (round.buy.time) prevTime = round.buy.time;
   }
 
   for (const evt of round.events) {
-    parts.push(renderEvent(evt));
+    parts.push(renderEvent(evt, prevTime));
+    if (evt.time) prevTime = evt.time;
   }
   for (const txn of round.transactions) {
-    parts.push(renderTransaction(txn));
+    parts.push(renderTransaction(txn, prevTime));
+    if (txn.time) prevTime = txn.time;
   }
 
-  if (!parts.length) return "";
+  if (!parts.length) return ["", prevTime];
 
   const label = round.id ? `Round ${round.id}` : "Session Items";
-  return `
+  return [`
     <div class="flow-group">
       <div class="flow-group-label">${label}</div>
       ${parts.join("")}
-    </div>`;
+    </div>`, prevTime];
 }
 
 // ── Flow items ─────────────────────────────────────────────────────────
-function renderPurchase(buy) {
+function renderPurchase(buy, prevTime) {
+  const dur = fmtDuration(prevTime, buy.time);
   return `
     <div class="flow-item fi-purchase">
       <div class="fi-icon">🛒</div>
@@ -148,13 +169,14 @@ function renderPurchase(buy) {
         <div class="fi-meta">
           <span class="fi-tag tag-purchase">Purchase</span>
           <span>${fmtCurrency(buy.cost)}</span>
+          ${dur ? `<span class="fi-duration">+${dur}</span>` : ""}
           ${buy.time ? `<span class="fi-time">${fmtTime(buy.time)}</span>` : ""}
         </div>
       </div>
     </div>`;
 }
 
-function renderEvent(evt) {
+function renderEvent(evt, prevTime) {
   const correct   = evt.pnt === 1 || evt.pnt === "1";
   const isScam    = evt.type === "scam";
   const responded = evt.resp ?? "—";
@@ -162,6 +184,7 @@ function renderEvent(evt) {
   // Correct = responded correctly (approved legit OR denied scam)
   const outcomeClass = correct ? "fi-correct" : "fi-incorrect";
   const outcomeIcon  = correct ? "✓" : "✗";
+  const dur = fmtDuration(prevTime, evt.time);
 
   return `
     <div class="flow-item fi-event ${outcomeClass}">
@@ -173,17 +196,19 @@ function renderEvent(evt) {
           ${evt.lvl ? `<span class="fi-tag tag-diff-${evt.lvl}">${evt.lvl}</span>` : ""}
           <span class="fi-resp">${responded.toUpperCase()}</span>
           <span class="fi-outcome">${outcomeIcon}</span>
+          ${dur ? `<span class="fi-duration">+${dur}</span>` : ""}
           ${evt.time ? `<span class="fi-time">${fmtTime(evt.time)}</span>` : ""}
         </div>
       </div>
     </div>`;
 }
 
-function renderTransaction(txn) {
+function renderTransaction(txn, prevTime) {
   const correct      = txn.pnt === 1 || txn.pnt === "1";
   const isLegit      = txn.type === "legit";
   const outcomeClass = correct ? "fi-correct" : "fi-incorrect";
   const outcomeIcon  = correct ? "✓" : "✗";
+  const dur = fmtDuration(prevTime, txn.time);
 
   return `
     <div class="flow-item fi-txn ${outcomeClass}">
@@ -196,6 +221,7 @@ function renderTransaction(txn) {
           ${txn.bal != null ? `<span class="fi-dim">bal: ${fmtCurrency(txn.bal)}</span>` : ""}
           <span class="fi-resp">${(txn.resp ?? "—").toUpperCase()}</span>
           <span class="fi-outcome">${outcomeIcon}</span>
+          ${dur ? `<span class="fi-duration">+${dur}</span>` : ""}
           ${txn.time ? `<span class="fi-time">${fmtTime(txn.time)}</span>` : ""}
         </div>
       </div>

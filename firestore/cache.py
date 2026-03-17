@@ -1,15 +1,3 @@
-"""
-firestore/cache.py — Lightweight in-process TTL cache.
-
-Usage:
-    cache = TTLCache(ttl=60)          # 60-second lifetime
-    cache.set("key", value)
-    value = cache.get("key")          # None if missing or expired
-    cache.delete("key")
-    cache.clear()                     # flush everything
-    cache.stats()                     # {"size": n, "hits": n, "misses": n}
-"""
-
 import time
 import threading
 import logging
@@ -18,18 +6,12 @@ logger = logging.getLogger(__name__)
 
 
 class TTLCache:
-    """Thread-safe in-memory cache with per-entry TTL."""
-
     def __init__(self, ttl: int = 60):
         self._ttl     = ttl
         self._store: dict[str, tuple] = {}   # key → (value, expires_at)
         self._lock    = threading.Lock()
         self._hits    = 0
         self._misses  = 0
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def get(self, key: str):
         with self._lock:
